@@ -1,0 +1,18 @@
+- var previousLiClass = (model.pagination.pageNumber <= 1) ? "disabled inactive" : "";
+- var previousURL = (model.pagination.pageNumber <= 1) ? "#" : context.util.format(model.pagination.URLPattern, model.pagination.pageNumber - 1, model.pagination.pageSize);
+- var nextLiClass = (model.pagination.totalPages <= model.pagination.pageNumber) ? "disabled inactive" : "";
+- var nextURL = (model.pagination.totalPages <= model.pagination.pageNumber) ? "#" : context.util.format(model.pagination.URLPattern, model.pagination.pageNumber + 1, model.pagination.pageSize);
+nav
+    ul.pagination
+        li(class=previousLiClass)
+          a(href='#{previousURL}', aria-label='Previous')
+            span(aria-hidden='true') «
+
+        - for (var i = 1; i <= model.pagination.totalPages; i++)
+            - var liClass = (i == model.pagination.pageNumber) ? "active" : "";
+                li(class=liClass)
+                    a(href='#{context.util.format(model.pagination.URLPattern, i, model.pagination.pageSize)}') #{i}
+
+        li(class=nextLiClass)
+          a(href='#{nextURL}', aria-label='Next')
+            span(aria-hidden='true') »

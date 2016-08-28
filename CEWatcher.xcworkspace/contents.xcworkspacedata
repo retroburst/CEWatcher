@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:/Users/retroburst/Development/CEWatcher/example-yahoo-json-response.json">
+   </FileRef>
+   <FileRef
+      location = "group:commands">
+   </FileRef>
+   <FileRef
+      location = "group:README.md">
+   </FileRef>
+   <FileRef
+      location = "group:modules">
+   </FileRef>
+   <FileRef
+      location = "group:config">
+   </FileRef>
+   <FileRef
+      location = "group:routes">
+   </FileRef>
+   <FileRef
+      location = "group:package.json">
+   </FileRef>
+   <FileRef
+      location = "group:views">
+   </FileRef>
+   <FileRef
+      location = "group:app.js">
+   </FileRef>
+   <FileRef
+      location = "group:public">
+   </FileRef>
+   <FileRef
+      location = "group:templates">
+   </FileRef>
+   <FileRef
+      location = "group:bin">
+   </FileRef>
+   <FileRef
+      location = "group:LICENSE">
+   </FileRef>
+</Workspace>

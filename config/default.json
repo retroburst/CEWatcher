@@ -1,0 +1,67 @@
+{
+    "applicationConfig" :
+    {
+        "environment" : "local",
+        "bindIPAddress" : "127.0.0.1",
+        "bindPort" : "8080",
+        
+        "mongodbURL" : "mongodb://localhost:27017/",
+        "mongodbName" : "cewatcher",
+        "mongodbPullsCollectionName" : "pulls",
+        "mongodbEventsCollectionName" : "events",
+        
+        "logsDir" : "./logs/",
+        
+        "notifyAddresses" : "",
+        "smtpHost" : "",
+        "smtpUser" : "",
+        "smtpPassword" : "",
+        
+        "selfURL" : "http://localhost:8080",
+       
+        "currencyExchangeJsonService" : {
+            // this time is in UTC and will be converted to server local time
+            "jobSchedule": { "hour" : 13, "minute": 30 },
+            "serviceSourceURL" : "https://query.yahooapis.com/v1/public/yql?format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback=&q=",
+            "serviceSourceQueryPattern" : "select * from yahoo.finance.xchange where pair in (%s)",
+            "ratesOfInterest" :
+            [
+                {
+                    "id" : "RI-AUDJPY",
+                    "name" : "Australian Dollar to Japanese Yen",
+                    "specifier" : "AUDJPY",
+                    "notifyRules" : [
+                        { "id" : "RI-AUDJPY-NR-GE-100", "rule" : { "type" : "greaterThanEqualTo", "value" : 100.00 } },
+                        { "id" : "RI-AUDJPY-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 90.00 } },
+                        { "id" : "RI-AUDJPY-NR-GE-80", "rule" : { "type" : "greaterThanEqualTo", "value" : 80.00 } },
+                        { "id" : "RI-AUDJPY-NR-LE-60", "rule" : { "type" : "lessThanEqualTo", "value" : 60.00 } }
+                    ]
+                },
+                
+                {
+                    "id" : "RI-AUDUSD",
+                    "name" : "Australian Dollar to American Dollar",
+                    "specifier" : "AUDUSD",
+                    "notifyRules" : [
+                        { "id" : "RI-AUDUSD-NR-GE-100", "rule" : { "type" : "greaterThanEqualTo", "value" : 1.00 } },
+                        { "id" : "RI-AUDUSD-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.90 } },
+                        { "id" : "RI-AUDUSD-NR-GE-80", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.80 } }
+                    ]
+                }
+            ]
+        },
+        
+        "tailLogBufferSize" : 100,
+        "paginationPageSize" : 20,
+        "useExpressPrettyOutput" : true,
+        "log4js" : {
+            // as the memory appender logs are presented to the user - change to
+            // display in local time (JST) rather than UTC
+            "memoryAppender": { "bufferSize" : 100, "timezoneOffset" : -540 },
+            "appenders": [
+                    { "type": "console", "timezoneOffset": 0 },
+                    { "type": "file", "filename": "cewatcher.log", "maxLogSize": 20480,  "timezoneOffset": 0 }
+                ]
+        }
+    }
+}

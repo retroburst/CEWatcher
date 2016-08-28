@@ -1,0 +1,14 @@
+body { padding: 50px; }
+@media (max-width:320px) { body { padding: 2px;  } }
+@media (max-width:481px) { body { padding: 5px;  } }
+@media (max-width:641px) { body { padding: 5px;  } }
+@media (max-width:961px) { body { padding: 10px;  } }
+
+.inactive {
+    pointer-events: none;
+    cursor: default;
+}
+
+.fixed-table{
+    table-layout: fixed;
+}

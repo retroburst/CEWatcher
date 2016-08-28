@@ -1,0 +1,17 @@
+// OpenShift environment variables overrides
+{
+    "applicationConfig" :
+    {
+        "environment" : "OPENSHIFT_CUSTOM_ENVIRONMENT",
+        "bindIPAddress" : "OPENSHIFT_NODEJS_IP",
+        "bindPort" : "OPENSHIFT_NODEJS_PORT",
+        "mongodbURL" : "OPENSHIFT_MONGODB_DB_URL",
+        
+        "logsDir" : "OPENSHIFT_LOG_DIR",
+        
+        "notifyAddresses" : "OPENSHIFT_CUSTOM_NOTIFY_ADDRESSES",
+        "smtpHost" : "OPENSHIFT_CUSTOM_SMTP_HOST",
+        "smtpUser" : "OPENSHIFT_CUSTOM_SMTP_USER",
+        "smtpPassword" : "OPENSHIFT_CUSTOM_SMTP_PASSWORD"
+    }
+}

@@ -1,0 +1,61 @@
+extends layout
+
+block content
+    h5 Details
+    table(class="table table-striped table-bordered table-hover fixed-table")
+        colgroup
+            col.col-md-2
+            col.col-md-10
+        tbody
+            tr
+                td Server Local Time
+                td #{model.localServerTime}
+            tr
+                td Application Version
+                td v#{context.version}
+            tr
+                td Uptime
+                td #{context.viewHelpers.formatUptimeDuration()}
+            tr
+                td Node.js Version
+                td #{process.version}
+            tr
+                td Node.js Dependencies
+                td
+                    each val, index in process.versions
+                        div #{index + ' : ' + val}
+            tr
+                td Processor
+                td #{process.arch}
+            tr
+                td Platform
+                td #{process.platform}
+            tr
+                td Memory Usage
+                td
+                    each val, index in process.memoryUsage()
+                        div #{index + ' : ' + val}
+
+
+    h5 Currency Exchange JSON Service Schedule
+    table(class="table table-striped table-bordered table-hover fixed-table")
+        colgroup
+            col.col-md-2
+            col.col-md-10
+        tbody
+            tr
+                td Next Scheduled Run
+                td #{context.viewHelpers.formatDate(model.currencyExchangeJsonServiceRunInfo.next)}
+
+    h5 Tail (last #{model.tailLogBuffer.length} logged events)
+    table(class="table table-striped table-bordered table-hover")
+        colgroup
+            col.col-md-12
+        tbody
+            each log, j in model.tailLogBuffer
+                tr
+                    td
+                        span(class=context.viewHelpers.generateLabelClassForLogEntry(log)) &nbsp;
+                        span   #{log}
+
+

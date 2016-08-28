@@ -1,0 +1,25 @@
+extends layout
+
+block content
+    h5.
+        List of Pulls from ANZ Bank
+
+    each pull, i in model.pulls
+        div(class="panel panel-default")
+            div(class="panel-heading")
+                h3(class="panel-title") #{context.viewHelpers.formatDate(pull.date)} [#{pull.numRatesOfInterest} rate(s)]
+            div(class="panel-body")
+                table(class="table table-striped table-bordered table-hover")
+                    thead
+                        tr
+                            th Product
+                            th Rate Code
+                            th Rate Value
+                    tbody
+                        each rate, j in pull.ratesOfInterest
+                            tr
+                                td #{rate.description}
+                                td #{rate.code}
+                                td #{rate.ratevalue} #{rate.ratesuffix}
+
+    include ./includes/pagination.jade
