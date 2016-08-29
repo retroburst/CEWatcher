@@ -11,6 +11,7 @@ var check = require('check-types');
 
 // modules
 var appConstants = require('./app-constants');
+var models = require('./app-models');
 
 // variables
 var applicationConfig = null;
@@ -28,8 +29,6 @@ var configure = function configure(_applicationConfig, _datastore) {
     logger = loggerWrapper(global.logger, 'currency-exchange-json-service');
     emailTemplate = jade.compileFile(appConstants.EMAIL_TEMPLATE_PATH, { pretty : true });
     pullJob = scheduleJob();
-    // test
-    process();
 }
 
 /********************************************************
@@ -49,50 +48,13 @@ var scheduleJob = function scheduleJob(){
 };
 
 /********************************************************
- * Processes the json result by trimming off the unwanted
- * sections.
- ********************************************************/
-var processJsonResult = function processJsonResult(body)
-{
-    logger.info("Trimming json response from bank.");
-    body = body.slice(applicationConfig.productJsonLeftTrimLength, body.length - applicationConfig.productJsonRightTrimLength);
-    // parse the result
-    logger.info("Parsing json response from bank.");
-    return(JSON.parse(body));
-};
-
-/********************************************************
- * Finds the rates of interest in the json.
- ********************************************************/
-var findRatesOfInterest = function findRatesOfInterest(productData)
-{
-    var paths = applicationConfig.productJsonBaseRatePathsOfInterest;
-    var ratesOfInterest = [];
-    // pick interesting bits and store in db
-    for(var i=0; i < paths.length; i++)
-    {
-        var path = paths[i];
-        logger.info("Looking for json path [" + path.description + "]: '" + path.jsonPath + "'.");
-        var result = jsonPath(path.jsonPath, productData);
-        logger.info("Found " + result.length + " rate(s) for json path [" + path.description + "].");
-        // add account type properties to the rate
-        for(var j=0; j < result.length; j++) {
-            result[j].description = path.description;
-            result[j].productCode = path.productCode;
-        }
-        ratesOfInterest = ratesOfInterest.concat(result);
-    }
-    return(ratesOfInterest);
-};
-
-/********************************************************
  * Handles the insert result of a new pull document.
  ********************************************************/
 var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc){
     if(err){
         logger.error(err);
     } else {
-        logger.info("Inserted new pull doc (" + doc.numRatesOfInterest + " rates).");
+        logger.info("Inserted new pull doc (" + doc.rates.length + " rates).");
     }
 };
 
@@ -101,12 +63,11 @@ var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc)
  ********************************************************/
 var insertNewPullDoc = function insertNewPullDoc(ratesOfInterest)
 {
-    var pullDoc = {
-        date : new Date(),
-        numRatesOfInterest : ratesOfInterest.length,
-        ratesOfInterest : ratesOfInterest
-    };
-    datastore.getPullsCollection().insert(pullDoc, handleInsertNewPullDocEvent);
+
+    var pull = new models.pull();
+    pull.created = new Date();
+    pull.rates = ratesOfInterest;
+    datastore.getPullsCollection().insert(pull, handleInsertNewPullDocEvent);
 };
 
 /********************************************************

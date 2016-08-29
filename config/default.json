@@ -9,6 +9,7 @@
         "mongodbName" : "cewatcher",
         "mongodbPullsCollectionName" : "pulls",
         "mongodbEventsCollectionName" : "events",
+        "mongodbNotificationsCollectionName" : "notifications",
         
         "logsDir" : "./logs/",
         
