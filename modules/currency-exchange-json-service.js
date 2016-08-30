@@ -29,6 +29,8 @@ var configure = function configure(_applicationConfig, _datastore) {
     logger = loggerWrapper(global.logger, 'currency-exchange-json-service');
     emailTemplate = jade.compileFile(appConstants.EMAIL_TEMPLATE_PATH, { pretty : true });
     pullJob = scheduleJob();
+    // TODO: remoce / for testing only
+    process();
 }
 
 /********************************************************
@@ -63,7 +65,6 @@ var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc)
  ********************************************************/
 var insertNewPullDoc = function insertNewPullDoc(ratesOfInterest)
 {
-
     var pull = new models.pull();
     pull.created = new Date();
     pull.rates = ratesOfInterest;
@@ -277,6 +278,48 @@ var buildSourceURL = function buildSourceURL(){
 };
 
 /********************************************************
+ * Finds the rates of interest in the service source 
+ * object.
+ ********************************************************/
+var findRatesOfInterest = function findRatesOfInterest(body){
+	//TODO: check the structure of the service source when multiple rates are defined
+	var result = null;
+	var ratesToFind = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
+	var rateResults = [];
+	var found = false;
+	// check the source body
+	if(!body.query.result.rate){
+		logger.warn("There was no rate results in the object returned from the service source.");
+		return(result);
+	}
+	
+	if(check.array(body.query.results.rate)){
+		rateResults.join(body.query.results.rate);
+	} else {
+		rateResults.push(body.query.results.rate);
+	}
+		
+	if(check.array(ratesToFind) && ratesToFind.length > 0){
+		for(var i=0; i < ratesToFind.length; i++){	
+			found = false;
+			for(var j=0; j < rateResults; j++){
+				if(ratesToFind[i].specifier == rateResults[j].id){
+					found = true;		
+					result[ratesToFind[i].id] = rateResults[j];
+					break;
+				}
+			}
+			if(!found){
+				logger.warn(util.format("There was no result for rate of interest with id '%s' found in service source object.", ratesToFind[i].id));
+			}
+		}
+	} else {
+		logger.warn("There are no rates of interest defined in configuration or there is a problem with the definition.");
+	}
+	return(result);
+};
+
+/********************************************************
  * Requests the bank product JSON and processes it.
  ********************************************************/
 var process = function process(callback){
@@ -286,15 +329,11 @@ var process = function process(callback){
         logger.info("Entering request handler.");
         if (!error && response.statusCode == 200) {
             logger.info("Response ok. Processing...");
-            
             console.log(body);
-            
-            /*
-            var productData = processJsonResult(body);
-            var ratesOfInterest = findRatesOfInterest(productData);
-            compareRates(ratesOfInterest);
-            */
-            
+            //var ratesOfInterest = findRatesOfInterest(body);
+            //if(ratesOfInterest){
+            //	compareRates(ratesOfInterest);
+            //}
             logger.info("Process complete.");
         } else {
             logger.error(error);
