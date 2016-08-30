@@ -23,7 +23,7 @@
         "currencyExchangeJsonService" : {
             // this time is in UTC and will be converted to server local time
             "jobSchedule": { "hour" : 13, "minute": 30 },
-            "serviceSourceURL" : "https://query.yahooapis.com/v1/public/yql?format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback=&q=",
+            "serviceSourceURL" : "https://query.yahooapis.com/v1/public/yql?format=json&diagnostics=false&env=store://datatables.org/alltableswithkeys&callback=&q=",
             "serviceSourceQueryPattern" : "select * from yahoo.finance.xchange where pair in (%s)",
             "ratesOfInterest" :
             [
