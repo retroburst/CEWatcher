@@ -56,7 +56,7 @@ var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc)
     if(err){
         logger.error(err);
     } else {
-        logger.info("Inserted new pull doc (" + doc.rates.length + " rates).");
+        logger.info("Inserted new pull doc (" + doc.rates.keys().length + " rates).");
     }
 };
 
@@ -86,26 +86,26 @@ var handleInsertNewEventDocEvent = function handleInsertNewEventDocEvent(err, do
  * Inserts a new event document.
  ********************************************************/
 var insertNewEventDoc = function insertNewEventDoc(rateChange){
-    var eventDoc = {
-        date : new Date(),
-        oldRate : rateChange.oldRate,
-        newRate : rateChange.newRate,
-        description : rateChange.description
-    };
-    datastore.getEventsCollection().insert(eventDoc, handleInsertNewEventDocEvent);
+    var event = new models.event();
+    event.ri_id = rateChange.ri_id;
+    event.ri_name = rateChange.ri_name;
+    event.created = new Date();
+    event.old_rate : rateChange.oldRate,
+    event.new_rate : rateChange.newRate,
+    event.description : rateChange.description
+    datastore.getEventsCollection().insert(event, handleInsertNewEventDocEvent);
 };
 
 /********************************************************
  * Builds a description of the rate change found.
  ********************************************************/
 var buildRateChangeDescription = function buildRateChangeDescription(rateChange){
-    return(util.format("Product '%s' with rate code '%s' changed interest rate from %d %s to %d%s",
-        rateChange.oldRate.description,
-        rateChange.oldRate.code,
-        rateChange.oldRate.ratevalue,
-        rateChange.oldRate.ratesuffix,
-        rateChange.newRate.ratevalue,
-        rateChange.newRate.ratesuffix));
+    return(util.format("%s (%s) with id '%s' changed interest rate from %d to %d.",
+        rateChange.ri_name,
+        rateChange.ri_specifier,
+        rateChange.ri_id,
+        rateChange.old_rate,
+        rateChange.new_rate));
 };
 
 /********************************************************
@@ -123,13 +123,14 @@ var handleNotificationMailEvent = function handleNotificationMailEvent(err, mess
  * Builds a plain text notification email.
  ********************************************************/
 var buildPlainTextChangedRatesMessage = function buildPlainTextChangedRatesMessage(changedRates){
-    var rateChangesMessage = 'Notification\n\nChanges in rates of interest at ANZ bank have been detected.\n\n';
+    var rateChangesMessage = 'Notification\n\nChanges in currency exchange rates have been detected.\n\n';
     for(var i=0; i < changedRates.length; i++)
     {
         rateChangesMessage += ' • ' + changedRates[i].description + '\n';
     }
     return(rateChangesMessage);
 };
+
 
 /********************************************************
  * Builds the SMTP configuration based conditionally on
@@ -213,7 +214,7 @@ var testEmailSend = function testEmailSend(){
  ********************************************************/
 var compareRates = function compareRates(ratesOfInterest)
 {
-    datastore.getPullsCollection().find({}, { limit : 1, sort : { date: -1 } }, function (err, pulls) {
+    datastore.getPullsCollection().find({}, { limit : 1, sort : { created: -1 } }, function (err, pulls) {
         if(err){
             logger.error(err);
         } else {
@@ -265,15 +266,15 @@ var buildSourceURL = function buildSourceURL(){
     var ratesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
     for(var i=0; i < ratesOfInterest.length; i++){
         var ri = ratesOfInterest[i];
-        console.log("ri", ri);
         if(check.nonEmptyString(ri.specifier)){
             specifiers.push(util.format('"%s"', ri.specifier));
         }
     }
-    console.log("specifiers", specifiers);
+    logger.debug("Adding the follwoing specifiers to service source URL.", specifiers);
     if(specifiers.length > 0){
         result += util.format(applicationConfig.currencyExchangeJsonService.serviceSourceQueryPattern, specifiers.join());
     }
+    logger.debug("Built service source URL.", result);
     return(result);
 };
 
@@ -282,7 +283,6 @@ var buildSourceURL = function buildSourceURL(){
  * object.
  ********************************************************/
 var findRatesOfInterest = function findRatesOfInterest(body){
-	//TODO: check the structure of the service source when multiple rates are defined
 	var result = null;
 	var ratesToFind = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
 	var rateResults = [];
@@ -294,7 +294,7 @@ var findRatesOfInterest = function findRatesOfInterest(body){
 	}
 	
 	if(check.array(body.query.results.rate)){
-		rateResults.join(body.query.results.rate);
+		rateResults.concat(body.query.results.rate);
 	} else {
 		rateResults.push(body.query.results.rate);
 	}
@@ -330,10 +330,10 @@ var process = function process(callback){
         if (!error && response.statusCode == 200) {
             logger.info("Response ok. Processing...");
             console.log(body);
-            //var ratesOfInterest = findRatesOfInterest(body);
-            //if(ratesOfInterest){
-            //	compareRates(ratesOfInterest);
-            //}
+            var ratesOfInterest = findRatesOfInterest(body);
+            if(ratesOfInterest){
+            	compareRates(ratesOfInterest);
+            }
             logger.info("Process complete.");
         } else {
             logger.error(error);
