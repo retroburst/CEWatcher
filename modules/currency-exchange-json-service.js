@@ -174,7 +174,7 @@ var sendEmailNotifications = function sendEmailNotifications(changedRates){
             text: rateChangesMessage,
             from: appConstants.APP_NAME + " <" + config.user + ">",
             to: config.notifyAddresses,
-            subject: appConstants.APP_NAME + ": Rates of Interest Change(s) @ " + moment().format(appConstants.DISPLAY_DATE_FORMAT),
+            subject: appConstants.APP_NAME + ": Currency Exchange Change(s) @ " + moment().format(appConstants.DISPLAY_DATE_FORMAT),
             attachment: [{ data: messageHTML, alternative: true }]
         };
         server.send(message, handleNotificationMailEvent);
@@ -192,7 +192,7 @@ var testEmailSend = function testEmailSend(){
         var config = buildSmtpConfig();
         var server = email.server.connect(config);
         var message	= {
-            text: "Test from IRWatcher application.",
+            text: "Test from CEWatcher application.",
             from: appConstants.APP_NAME + " <" + config.user + ">",
             to: config.notifyAddresses,
             subject: appConstants.APP_NAME + ": Test @ " + moment().format(appConstants.DISPLAY_DATE_FORMAT)
@@ -216,29 +216,36 @@ var compareRates = function compareRates(ratesOfInterest)
 {
     datastore.getPullsCollection().find({}, { limit : 1, sort : { created: -1 } }, function (err, pulls) {
         if(err){
-            logger.error(err);
+            logger.error("Failed to get latest pull from the datastore.", err);
         } else {
             // check for changed rates
             var changedRates = [];
             if(pulls.length >= 1)
             {
-                for(var i=0; i < pulls[0].ratesOfInterest.length; i++)
-                {
-                    for(var j=0; j < ratesOfInterest.length; j++)
-                    {
-                        if(pulls[0].ratesOfInterest[i].code === ratesOfInterest[j].code)
-                        {
-                            if(pulls[0].ratesOfInterest[i].ratevalue !== ratesOfInterest[j].ratevalue)
-                            {
-                                var rateChange = { oldRateDate: pulls[0].date, oldRate : pulls[0].ratesOfInterest[i], newRate : ratesOfInterest[j] };
-                                rateChange.description = buildRateChangeDescription(rateChange);
-                                logger.info(rateChange.description);
-                                insertNewEventDoc(rateChange);
-                                changedRates.push(rateChange);
-                            }
-                        }
-                    }
-                }
+            	var lastPullRates = pulls[0].rates;
+          		for(var i=0; i < ratesOfInterest.length; i++)
+              {
+              
+              	//TODO: fix this need to loop through the rates of interest in config and match on specifier
+              
+                  if(lastPullRates[ratesOfInterest[i].code])
+                  {
+                      if(lastPullRates[ratesOfInterest[i]].Rate !== ratesOfInterest[i].Rate)
+                      {
+                      		var rateChange = new models.event();
+                          rateChange.description = buildRateChangeDescription(rateChange);
+                          rateChange.ri_id = null;
+													rateChange.ri_name = null;
+													rateChange.ri_specifier = null;
+													rateChange.old_rate = null;
+													rateChange.new_rate = null;
+													rateChange.created = new Date();
+                          logger.info(rateChange.description);
+                          insertNewEventDoc(rateChange);
+                          changedRates.push(rateChange);
+                      }
+                  }
+              } 
             }
             // if we have some change in rates or if there is no pulls
             // in the datastore yet - save the pull
