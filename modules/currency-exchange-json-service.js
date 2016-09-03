@@ -100,9 +100,8 @@ var insertNewEventDoc = function insertNewEventDoc(rateChange){
  * Builds a description of the rate change found.
  ********************************************************/
 var buildRateChangeDescription = function buildRateChangeDescription(rateChange){
-    return(util.format("%s (%s) with id '%s' changed interest rate from %d to %d.",
+    return(util.format("%s (%s) changed interest rate from %d to %d.",
         rateChange.ri_name,
-        rateChange.ri_specifier,
         rateChange.ri_id,
         rateChange.old_rate,
         rateChange.new_rate));
@@ -223,29 +222,36 @@ var compareRates = function compareRates(ratesOfInterest)
             if(pulls.length >= 1)
             {
             	var lastPullRates = pulls[0].rates;
-          		for(var i=0; i < ratesOfInterest.length; i++)
-              {
-              
-              	//TODO: fix this need to loop through the rates of interest in config and match on specifier
-              
-                  if(lastPullRates[ratesOfInterest[i].code])
-                  {
-                      if(lastPullRates[ratesOfInterest[i]].Rate !== ratesOfInterest[i].Rate)
-                      {
-                      		var rateChange = new models.event();
-                          rateChange.description = buildRateChangeDescription(rateChange);
-                          rateChange.ri_id = null;
-													rateChange.ri_name = null;
-													rateChange.ri_specifier = null;
-													rateChange.old_rate = null;
-													rateChange.new_rate = null;
-													rateChange.created = new Date();
-                          logger.info(rateChange.description);
-                          insertNewEventDoc(rateChange);
-                          changedRates.push(rateChange);
-                      }
-                  }
-              } 
+            	var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
+          		for(var i=0; i < configuredRatesOfInterest.length; i++){
+	          		for(var j=0; j < ratesOfInterest.length; j++)
+	              {
+	              		// if this rateis in the last pull
+	                  if(lastPullRates[ratesOfInterest[j].id] && configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
+	                  {
+	                  		
+	                  		// TODO: this needs to change to use rules in config
+	                  		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].id);
+	                  		
+	                  		// loop through the rules and find and matches 
+	                  		// build a list of triggered rules
+	                  		// if any rules triggered - build rate change and push onto changed rates
+	                      if(rulesResult.triggered)
+	                      {
+	                      		var rateChange = new models.event();
+	                          rateChange.description = buildRateChangeDescription(rateChange);
+	                          rateChange.ri_id = null;
+														rateChange.ri_name = null;
+														rateChange.old_rate = null;
+														rateChange.new_rate = null;
+														rateChange.created = new Date();
+	                          logger.info(rateChange.description);
+	                          insertNewEventDoc(rateChange);
+	                          changedRates.push(rateChange);
+	                      }
+	                  }
+	              }
+	          	} 
             }
             // if we have some change in rates or if there is no pulls
             // in the datastore yet - save the pull
@@ -264,6 +270,34 @@ var compareRates = function compareRates(ratesOfInterest)
     });
 };
 
+var evalutaeRules = function evaluateRule(rules, rate){
+	if(check.array(rules) && check.number(rate)){
+			var results = { triggeredRules: [], triggered: false }; 
+			for(var i=0; i < rules.length; i++){
+				var ruleResult = evaluateRule(rule, rate);
+				if(ruleResult === true){
+					results.triggeredRules.push(rule.id);
+					results.triggered = true;
+				}
+			}
+		}
+		return();
+	} else {
+		return({ triggeredRules: [], triggered: false });
+	}
+};
+
+var evaluateRule = function evaluateRule(rule, rate){
+	if(check.nonEmptyString(rule.type)){
+		switch(rule.type){
+			case "greaterThanEqualTo": return(rate >= rule.value);
+			case "greaterThan": return(rate > rule.value);
+			case "lessThanEqualTo": return(rate <= rule.value);
+			case "lessThan": return(rate < rule.value);
+		}
+	}
+};
+
 /********************************************************
  * Builds the source URL.
  ********************************************************/
@@ -273,11 +307,11 @@ var buildSourceURL = function buildSourceURL(){
     var ratesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
     for(var i=0; i < ratesOfInterest.length; i++){
         var ri = ratesOfInterest[i];
-        if(check.nonEmptyString(ri.specifier)){
-            specifiers.push(util.format('"%s"', ri.specifier));
+        if(check.nonEmptyString(ri.id)){
+            specifiers.push(util.format('"%s"', ri.id));
         }
     }
-    logger.debug("Adding the follwoing specifiers to service source URL.", specifiers);
+    logger.debug("Adding the following specifiers to service source URL.", specifiers);
     if(specifiers.length > 0){
         result += util.format(applicationConfig.currencyExchangeJsonService.serviceSourceQueryPattern, specifiers.join());
     }
@@ -310,7 +344,7 @@ var findRatesOfInterest = function findRatesOfInterest(body){
 		for(var i=0; i < ratesToFind.length; i++){	
 			found = false;
 			for(var j=0; j < rateResults; j++){
-				if(ratesToFind[i].specifier == rateResults[j].id){
+				if(ratesToFind[i].id == rateResults[j].id){
 					found = true;		
 					result[ratesToFind[i].id] = rateResults[j];
 					break;

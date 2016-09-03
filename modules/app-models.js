@@ -4,7 +4,6 @@
 var event = function event() {
     this.ri_id = null;
     this.ri_name = null;
-    this.ri_specifier = null;
     this.old_rate = null;
     this.new_rate = null;
     this.description = null;

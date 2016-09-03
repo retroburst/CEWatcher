@@ -28,9 +28,8 @@
             "ratesOfInterest" :
             [
                 {
-                    "id" : "RI-AUDJPY",
+                    "id" : "AUDJPY",
                     "name" : "Australian Dollar to Japanese Yen",
-                    "specifier" : "AUDJPY",
                     "notifyRules" : [
                         { "id" : "RI-AUDJPY-NR-GE-100", "rule" : { "type" : "greaterThanEqualTo", "value" : 100.00 } },
                         { "id" : "RI-AUDJPY-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 90.00 } },
@@ -40,9 +39,8 @@
                 },
                 
                 {
-                    "id" : "RI-AUDUSD",
+                    "id" : "AUDUSD",
                     "name" : "Australian Dollar to American Dollar",
-                    "specifier" : "AUDUSD",
                     "notifyRules" : [
                         { "id" : "RI-AUDUSD-NR-GE-100", "rule" : { "type" : "greaterThanEqualTo", "value" : 1.00 } },
                         { "id" : "RI-AUDUSD-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.90 } },
