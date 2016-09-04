@@ -8,6 +8,7 @@ var email = require('emailjs');
 var schedule = require('node-schedule');
 var loggerWrapper = require('log4js-function-designation-wrapper');
 var check = require('check-types');
+var underscore = require('underscore');
 
 // modules
 var appConstants = require('./app-constants');
@@ -86,14 +87,26 @@ var handleInsertNewEventDocEvent = function handleInsertNewEventDocEvent(err, do
  * Inserts a new event document.
  ********************************************************/
 var insertNewEventDoc = function insertNewEventDoc(rateChange){
-    var event = new models.event();
-    event.ri_id = rateChange.ri_id;
-    event.ri_name = rateChange.ri_name;
-    event.created = new Date();
-    event.old_rate : rateChange.oldRate,
-    event.new_rate : rateChange.newRate,
-    event.description : rateChange.description
-    datastore.getEventsCollection().insert(event, handleInsertNewEventDocEvent);
+	datastore.getEventsCollection().insert(rateChange, handleInsertNewEventDocEvent);
+};
+
+/********************************************************
+ * Handles the insert result of a new notification 
+ * document.
+ ********************************************************/
+var handleInsertNewNotificationDocEvent = function handleInsertNewNotificationDocEvent(err, doc){
+    if(err){
+        logger.error(err);
+    } else {
+        logger.info("Inserted new notification doc.");
+    }
+};
+
+/********************************************************
+ * Inserts a new notification document.
+ ********************************************************/
+var insertNewNotificationEvent = function insertNewNotificationEvent(notification){
+	datastore.getNotificationsCollection().insert(notification, handleInsertNewNotificationDocEvent);
 };
 
 /********************************************************
@@ -223,33 +236,22 @@ var compareRates = function compareRates(ratesOfInterest)
             {
             	var lastPullRates = pulls[0].rates;
             	var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
-          		for(var i=0; i < configuredRatesOfInterest.length; i++){
-	          		for(var j=0; j < ratesOfInterest.length; j++)
-	              {
-	              		// if this rateis in the last pull
-	                  if(lastPullRates[ratesOfInterest[j].id] && configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
-	                  {
-	                  		
-	                  		// TODO: this needs to change to use rules in config
-	                  		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].id);
-	                  		
-	                  		// loop through the rules and find and matches 
-	                  		// build a list of triggered rules
-	                  		// if any rules triggered - build rate change and push onto changed rates
-	                      if(rulesResult.triggered)
-	                      {
-	                      		var rateChange = new models.event();
-	                          rateChange.description = buildRateChangeDescription(rateChange);
-	                          rateChange.ri_id = null;
-														rateChange.ri_name = null;
-														rateChange.old_rate = null;
-														rateChange.new_rate = null;
-														rateChange.created = new Date();
-	                          logger.info(rateChange.description);
-	                          insertNewEventDoc(rateChange);
-	                          changedRates.push(rateChange);
-	                      }
-	                  }
+          		for(var i=0; i < configuredRatesOfInterest.length; i++) {
+	          		for(var j=0; j < ratesOfInterest.length; j++) {
+              		// if this rateis in the last pull
+                  if(configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
+                  {	
+                		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].Rate);
+                    if(rulesResult.triggered)
+                    {
+											var processedRateChange = processRateChange(
+													configuredRatesOfInterest[i], 
+													ratesOfInterest[j], 
+													lastPullRates[configuredRatesOfInterest[i].id], 
+													rulesResult);  
+											if(processedRateChange !== null) { changedRates.push(processedRateChange); }
+                    }
+                  }
 	              }
 	          	} 
             }
@@ -269,6 +271,44 @@ var compareRates = function compareRates(ratesOfInterest)
         }
     });
 };
+
+/********************************************************
+ * Process the rate change by checking the last notification
+ * created date for this rate of interest.
+ ********************************************************/
+var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult){
+	var result = null;
+	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, pulls) {
+    if(err){
+        logger.error("Failed to get latest notification from the datastore.", err);
+    } else { 
+    
+    //TODO: write shouldSendNotification
+    
+		  if(shouldSendNotification()){
+				var rateChange = new models.event();
+				rateChange.ri_id = configRate.ri_id;
+				rateChange.ri_name = configRate.ri_name;
+				rateChange.old_rate = lastPullRate ? lastPullRate.Rate : null;
+				rateChange.new_rate = sourceRate.Rate;
+				rateChange.created = new Date();
+				rateChange.description = buildRateChangeDescription(rateChange);
+				logger.info(rateChange.description);
+				insertNewEventDoc(rateChange);
+				result = rateChange;
+				
+				var rateChangeNotification = new models.notification();    
+				rateChangeNotification.ri_id = configRate.ri_id;
+				rateChangeNotification.ri_name = configRate.ri_name;
+				rateChangeNotification.triggered_rules = rulesResult.triggeredRules;
+				rateChangeNotification.created = new Date();
+				insertNewNotificationEvent(rateChangeNotification);
+		  }  
+  }                   		
+	return(result);
+};
+
+var 
 
 var evalutaeRules = function evaluateRule(rules, rate){
 	if(check.array(rules) && check.number(rate)){

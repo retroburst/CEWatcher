@@ -25,6 +25,7 @@
             "jobSchedule": { "hour" : 13, "minute": 30 },
             "serviceSourceURL" : "https://query.yahooapis.com/v1/public/yql?format=json&diagnostics=false&env=store://datatables.org/alltableswithkeys&callback=&q=",
             "serviceSourceQueryPattern" : "select * from yahoo.finance.xchange where pair in (%s)",
+            "notificationThresholdHours" : 168,
             "ratesOfInterest" :
             [
                 {

@@ -49,6 +49,7 @@ var initDatastore = function initDatastore(applicationConfig)
     // add functions to help manage collections
     datastore.getPullsCollection = function(){ return(this.get(applicationConfig.mongodbPullsCollectionName)); };
     datastore.getEventsCollection = function(){ return(this.get(applicationConfig.mongodbEventsCollectionName)); };
+    datastore.getNotificationsCollection = function(){ return(this.get(applicationConfig.mongodbNotificationsCollectionName)); };
     logger.info("Datastore initialised.");
     return(datastore);
 };
