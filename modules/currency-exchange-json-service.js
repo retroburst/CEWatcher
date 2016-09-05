@@ -21,6 +21,8 @@ var datastore = null;
 var emailTemplate = null;
 var pullJob = null;
 
+//TODO: add debugging / info logging 
+
 /********************************************************
  * Configures the currency exchange JSON service.
  ********************************************************/
@@ -278,14 +280,11 @@ var compareRates = function compareRates(ratesOfInterest)
  ********************************************************/
 var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult){
 	var result = null;
-	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, pulls) {
+	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, notifications) {
     if(err){
         logger.error("Failed to get latest notification from the datastore.", err);
-    } else { 
-    
-    //TODO: write shouldSendNotification
-    
-		  if(shouldSendNotification()){
+    } else {  
+		  if(shouldSendNotification(notifications)){
 				var rateChange = new models.event();
 				rateChange.ri_id = configRate.ri_id;
 				rateChange.ri_name = configRate.ri_name;
@@ -308,11 +307,50 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
 	return(result);
 };
 
-var 
+/********************************************************
+ * Determines if a notification of a change 
+ * should be sent.
+ ********************************************************/
+var shouldSendNotification = functionshouldSendNotification(notifications, configRate, sourceRate, rulesResult){
+	if(notifications === null || notifications.length === 0){
+		return(true);
+	} else if (){
+		// check if in triggered rules of last notification
+		var lastNotification = notifications[0];
+		var triggeredIntersection = underscore.intersection(rulesResult.triggeredRules, lastNotifications.triggered_rules);
+		if(triggeredIntersection.length > 0){
+			// if in the triggered rules list - check how long ago it was compared to configured threshold
+			for(var i=0; i < triggeredIntersection.length; i++){			
+				// if in list but longer than threshold return true
+				if(olderThanThreshold(lastNotification.created)){
+					return(true);
+				}
+			}
+			return(false);
+		}
+	}
+	return(true);
+};
 
+/********************************************************
+ * Determines if the last notification for a particular
+ * rate change is older than the threshold in hours.
+ ********************************************************/
+var olderThanThreshold = function olderThanThreshold(notificationDate){
+	var notificationDateMoment = moment(notificationDate);
+	var nowMoment = moment(new Date());
+	var threshold = applicationConfig.currencyExchangeJsonService.notificationThresholdHours;
+	var difference = nowMoment.diff(notificationMoment, 'hours');
+	return(difference > threshold);
+};
+
+/********************************************************
+ * Evaluates the notification rules to determine if any
+ * trigger.
+ ********************************************************/
 var evalutaeRules = function evaluateRule(rules, rate){
-	if(check.array(rules) && check.number(rate)){
-			var results = { triggeredRules: [], triggered: false }; 
+	var results = { triggeredRules: [], triggered: false };
+	if(check.array(rules) && check.number(rate)){		 
 			for(var i=0; i < rules.length; i++){
 				var ruleResult = evaluateRule(rule, rate);
 				if(ruleResult === true){
@@ -321,12 +359,15 @@ var evalutaeRules = function evaluateRule(rules, rate){
 				}
 			}
 		}
-		return();
+		return(results);
 	} else {
 		return({ triggeredRules: [], triggered: false });
 	}
 };
 
+/********************************************************
+ * Evaluates a notification  rule.
+ ********************************************************/
 var evaluateRule = function evaluateRule(rule, rate){
 	if(check.nonEmptyString(rule.type)){
 		switch(rule.type){
