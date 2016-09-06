@@ -281,40 +281,42 @@ var compareRates = function compareRates(ratesOfInterest)
 var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult){
 	var result = null;
 	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, notifications) {
-    if(err){
-        logger.error("Failed to get latest notification from the datastore.", err);
-    } else {  
-		  if(shouldSendNotification(notifications)){
-				var rateChange = new models.event();
-				rateChange.ri_id = configRate.ri_id;
-				rateChange.ri_name = configRate.ri_name;
-				rateChange.old_rate = lastPullRate ? lastPullRate.Rate : null;
-				rateChange.new_rate = sourceRate.Rate;
-				rateChange.created = new Date();
-				rateChange.description = buildRateChangeDescription(rateChange);
-				logger.info(rateChange.description);
-				insertNewEventDoc(rateChange);
-				result = rateChange;
+		  if(err){
+		      logger.error("Failed to get latest notification from the datastore.", err);
+		  } else {  
+				if(shouldSendNotification(notifications)){
+					var rateChange = new models.event();
+					rateChange.ri_id = configRate.ri_id;
+					rateChange.ri_name = configRate.ri_name;
+					rateChange.old_rate = lastPullRate ? lastPullRate.Rate : null;
+					rateChange.new_rate = sourceRate.Rate;
+					rateChange.created = new Date();
+					rateChange.description = buildRateChangeDescription(rateChange);
+					logger.info(rateChange.description);
+					insertNewEventDoc(rateChange);
+					result = rateChange;
 				
-				var rateChangeNotification = new models.notification();    
-				rateChangeNotification.ri_id = configRate.ri_id;
-				rateChangeNotification.ri_name = configRate.ri_name;
-				rateChangeNotification.triggered_rules = rulesResult.triggeredRules;
-				rateChangeNotification.created = new Date();
-				insertNewNotificationEvent(rateChangeNotification);
-		  }  
-  }                   		
-	return(result);
+					var rateChangeNotification = new models.notification();    
+					rateChangeNotification.ri_id = configRate.ri_id;
+					rateChangeNotification.ri_name = configRate.ri_name;
+					rateChangeNotification.triggered_rules = rulesResult.triggeredRules;
+					rateChangeNotification.created = new Date();
+					insertNewNotificationEvent(rateChangeNotification);
+				}  
+		}                   		
+		return(result);
+	});
 };
 
 /********************************************************
  * Determines if a notification of a change 
  * should be sent.
  ********************************************************/
-var shouldSendNotification = functionshouldSendNotification(notifications, configRate, sourceRate, rulesResult){
+ //TODO: remove unneeded params
+var shouldSendNotification = function shouldSendNotification(notifications, configRate, sourceRate, rulesResult){
 	if(notifications === null || notifications.length === 0){
 		return(true);
-	} else if (){
+	} else {
 		// check if in triggered rules of last notification
 		var lastNotification = notifications[0];
 		var triggeredIntersection = underscore.intersection(rulesResult.triggeredRules, lastNotifications.triggered_rules);
@@ -358,8 +360,7 @@ var evalutaeRules = function evaluateRule(rules, rate){
 					results.triggered = true;
 				}
 			}
-		}
-		return(results);
+			return(results);
 	} else {
 		return({ triggeredRules: [], triggered: false });
 	}
