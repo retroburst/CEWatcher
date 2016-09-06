@@ -34,6 +34,7 @@ var configure = function configure(_applicationConfig, _datastore) {
     pullJob = scheduleJob();
     // TODO: remoce / for testing only
     process();
+    logger.info("Completed configuration successfully.");
 }
 
 /********************************************************
@@ -47,8 +48,8 @@ var scheduleJob = function scheduleJob(){
     scheduleLocalToServer = { hour: scheduleTime.getHours(), minute: scheduleTime.getMinutes() };
     logger.info("Scheduling Currency Exchange JSON Service to run according to configuration converted to local time.",
         scheduleLocalToServer, "local timezone offset", scheduleTime.getTimezoneOffset());
-    console.log(process);
     var job = schedule.scheduleJob(scheduleLocalToServer, process);
+    logger.info("Scheduled job successfully");
     return(job);
 };
 
@@ -57,7 +58,7 @@ var scheduleJob = function scheduleJob(){
  ********************************************************/
 var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc){
     if(err){
-        logger.error(err);
+        logger.error("Failed to insert a new pull document.", err);
     } else {
         logger.info("Inserted new pull doc (" + doc.rates.keys().length + " rates).");
     }
@@ -72,6 +73,7 @@ var insertNewPullDoc = function insertNewPullDoc(ratesOfInterest)
     pull.created = new Date();
     pull.rates = ratesOfInterest;
     datastore.getPullsCollection().insert(pull, handleInsertNewPullDocEvent);
+    logger.debug("Inserting a new pull document.");
 };
 
 /********************************************************
@@ -79,7 +81,7 @@ var insertNewPullDoc = function insertNewPullDoc(ratesOfInterest)
  ********************************************************/
 var handleInsertNewEventDocEvent = function handleInsertNewEventDocEvent(err, doc){
     if(err){
-        logger.error(err);
+        logger.error("Failed to insert a new event document.", err);
     } else {
         logger.info("Inserted new event doc.");
     }
@@ -90,6 +92,7 @@ var handleInsertNewEventDocEvent = function handleInsertNewEventDocEvent(err, do
  ********************************************************/
 var insertNewEventDoc = function insertNewEventDoc(rateChange){
 	datastore.getEventsCollection().insert(rateChange, handleInsertNewEventDocEvent);
+	logger.debug("Inserting a new event document");
 };
 
 /********************************************************
@@ -98,7 +101,7 @@ var insertNewEventDoc = function insertNewEventDoc(rateChange){
  ********************************************************/
 var handleInsertNewNotificationDocEvent = function handleInsertNewNotificationDocEvent(err, doc){
     if(err){
-        logger.error(err);
+        logger.error("Failed to insert a new notification document.", err);
     } else {
         logger.info("Inserted new notification doc.");
     }
@@ -109,6 +112,7 @@ var handleInsertNewNotificationDocEvent = function handleInsertNewNotificationDo
  ********************************************************/
 var insertNewNotificationEvent = function insertNewNotificationEvent(notification){
 	datastore.getNotificationsCollection().insert(notification, handleInsertNewNotificationDocEvent);
+	logger.debug("Inserting a new notification document.");
 };
 
 /********************************************************
@@ -127,7 +131,7 @@ var buildRateChangeDescription = function buildRateChangeDescription(rateChange)
  ********************************************************/
 var handleNotificationMailEvent = function handleNotificationMailEvent(err, message){
     if(err){
-        logger.error(err);
+        logger.error("Failed to send email notifications.", err);
     } else {
         logger.info("Email notifications sent successfully.");
     }
@@ -171,6 +175,7 @@ var buildSmtpConfig = function buildSmtpConfig(){
             notifyAddresses : applicationConfig.notifyAddresses
         };
     }
+    logger.info("Built SMTP config successfully.");
     return(config);
 };
 
@@ -238,20 +243,25 @@ var compareRates = function compareRates(ratesOfInterest)
             {
             	var lastPullRates = pulls[0].rates;
             	var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
+          		logger.debug(util.format("Iterating over %d configured rates of interest."), configuredRatesOfInterest.length);
+          		logger.debug(util.format("Iterating over %d source rates of interest."), ratesOfInterest.length);
           		for(var i=0; i < configuredRatesOfInterest.length; i++) {
 	          		for(var j=0; j < ratesOfInterest.length; j++) {
               		// if this rateis in the last pull
                   if(configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
                   {	
+                  	logger.debug(util.format("Matched configured rate to source rate with id %s", configuredRatesOfInterest[i].id)); 
                 		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].Rate);
+                    logger.debug("Evaluatd rules.", rulesResult);
                     if(rulesResult.triggered)
                     {
-											var processedRateChange = processRateChange(
+											var processedResult = processRateChange(
 													configuredRatesOfInterest[i], 
 													ratesOfInterest[j], 
 													lastPullRates[configuredRatesOfInterest[i].id], 
-													rulesResult);  
-											if(processedRateChange !== null) { changedRates.push(processedRateChange); }
+													rulesResult);
+											logger.debug("Processed rate change.", processedRateChange);
+											if(processedResult.shouldNotify) { changedRates.push(processedResult.processedRateChange); }
                     }
                   }
 	              }
@@ -279,7 +289,7 @@ var compareRates = function compareRates(ratesOfInterest)
  * created date for this rate of interest.
  ********************************************************/
 var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult){
-	var result = null;
+	var result = { shouldNotify : false, processedRateChange : null };
 	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, notifications) {
 		  if(err){
 		      logger.error("Failed to get latest notification from the datastore.", err);
@@ -294,7 +304,8 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
 					rateChange.description = buildRateChangeDescription(rateChange);
 					logger.info(rateChange.description);
 					insertNewEventDoc(rateChange);
-					result = rateChange;
+					result.processedRateChange = rateChange;
+					result.shouldNotify = true;
 				
 					var rateChangeNotification = new models.notification();    
 					rateChangeNotification.ri_id = configRate.ri_id;
