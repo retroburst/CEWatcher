@@ -21,8 +21,6 @@ var datastore = null;
 var emailTemplate = null;
 var pullJob = null;
 
-//TODO: add debugging / info logging 
-
 /********************************************************
  * Configures the currency exchange JSON service.
  ********************************************************/
@@ -250,7 +248,7 @@ var compareRates = function compareRates(ratesOfInterest)
               		// if this rateis in the last pull
                   if(configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
                   {	
-                  	logger.debug(util.format("Matched configured rate to source rate with id %s", configuredRatesOfInterest[i].id)); 
+                  	logger.debug(util.format("Matched configured rate to source rate with id '%s'.", configuredRatesOfInterest[i].id)); 
                 		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].Rate);
                     logger.debug("Evaluatd rules.", rulesResult);
                     if(rulesResult.triggered)
@@ -294,7 +292,8 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
 		  if(err){
 		      logger.error("Failed to get latest notification from the datastore.", err);
 		  } else {  
-				if(shouldSendNotification(notifications)){
+				if(shouldSendNotification(notifications, configRate, rulesResult)){
+					logger.debug("Notifications should be sent. Building representing objects.");
 					var rateChange = new models.event();
 					rateChange.ri_id = configRate.ri_id;
 					rateChange.ri_name = configRate.ri_name;
@@ -323,25 +322,28 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
  * Determines if a notification of a change 
  * should be sent.
  ********************************************************/
- //TODO: remove unneeded params
-var shouldSendNotification = function shouldSendNotification(notifications, configRate, sourceRate, rulesResult){
+var shouldSendNotification = function shouldSendNotification(notifications, configRate, rulesResult){
 	if(notifications === null || notifications.length === 0){
+		logger.debug(util.format("Notifications should be sent because there is no previous notifications for rate with id '%s'.", configRate.id));
 		return(true);
 	} else {
 		// check if in triggered rules of last notification
 		var lastNotification = notifications[0];
-		var triggeredIntersection = underscore.intersection(rulesResult.triggeredRules, lastNotifications.triggered_rules);
+		var triggeredIntersection = underscore.intersection(rulesResult.triggeredRules, lastNotification.triggered_rules);
 		if(triggeredIntersection.length > 0){
 			// if in the triggered rules list - check how long ago it was compared to configured threshold
 			for(var i=0; i < triggeredIntersection.length; i++){			
 				// if in list but longer than threshold return true
 				if(olderThanThreshold(lastNotification.created)){
+					logger.debug(util.format("Notifications should be sent as the triggered rule '%s' notification is older than the threshold", triggeredIntersection[i]));
 					return(true);
 				}
 			}
+			logger.debug("Notifications should ## NOT ## be sent as all triggered rules have already been notified in the threshold period.");
 			return(false);
 		}
 	}
+	loger.debug("Notifications should be sent.");
 	return(true);
 };
 
@@ -354,6 +356,7 @@ var olderThanThreshold = function olderThanThreshold(notificationDate){
 	var nowMoment = moment(new Date());
 	var threshold = applicationConfig.currencyExchangeJsonService.notificationThresholdHours;
 	var difference = nowMoment.diff(notificationMoment, 'hours');
+	logger.debug(util.format("Difference in hours was '%d' compared to threshold '%d'.", difference, threshold));
 	return(difference > threshold);
 };
 
@@ -365,8 +368,10 @@ var evalutaeRules = function evaluateRule(rules, rate){
 	var results = { triggeredRules: [], triggered: false };
 	if(check.array(rules) && check.number(rate)){		 
 			for(var i=0; i < rules.length; i++){
+				logger.debug(util.format("Evalutaing rule '%s'.", rule.id));
 				var ruleResult = evaluateRule(rule, rate);
 				if(ruleResult === true){
+					logger.debug(util.format("Rule '%s' was triggered.", rule.id));					
 					results.triggeredRules.push(rule.id);
 					results.triggered = true;
 				}
@@ -408,7 +413,7 @@ var buildSourceURL = function buildSourceURL(){
     if(specifiers.length > 0){
         result += util.format(applicationConfig.currencyExchangeJsonService.serviceSourceQueryPattern, specifiers.join());
     }
-    logger.debug("Built service source URL.", result);
+    logger.debug(util.format("Built service source URL: '%s'.", result));
     return(result);
 };
 
@@ -470,7 +475,7 @@ var process = function process(callback){
             }
             logger.info("Process complete.");
         } else {
-            logger.error(error);
+            logger.error("Failed to request service source for information.", error);
         }
         if(callback) { callback(); }
     });
