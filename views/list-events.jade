@@ -8,19 +8,19 @@ block content
         thead
             tr
                 th Date
-                th Product
-                th Rate Code
-                th Rate Type
+                th Identifier
+                th Name
                 th Old Rate
                 th New Rate
+                th Triggered Rules
         tbody
             each event, j in model.events
                 tr
-                    td #{context.viewHelpers.formatDate(event.date)}
-                    td #{event.newRate.description}
-                    td #{event.newRate.code}
-                    td #{event.newRate.ratetype}
-                    td(class="danger") #{event.oldRate.ratevalue} #{event.oldRate.ratesuffix}
-                    td(class="success") #{event.newRate.ratevalue} #{event.newRate.ratesuffix}
+                    td #{context.viewHelpers.formatDate(event.created)}
+                    td #{event.ri_id}
+                    td #{event.ri_name}
+                    td(class="danger") #{event.old_rate}
+                    td(class="success") #{event.new_rate}
+                    td #{event.triggered_rules}
 
     include ./includes/pagination.jade

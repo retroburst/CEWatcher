@@ -4,7 +4,7 @@ block content
     .jumbotron
       .container
         p
-          | Watches interest rates at ANZ bank for specific products of interest, stores the changes over time and alerts changes via email.
+          | Watches exchange rates for currencies of interest, stores changes over time and notifies changes via email.
 
 
     h5 Latest Events
@@ -12,18 +12,18 @@ block content
         thead
             tr
                 th Date
-                th Product
+                th Identifier
                 th Old Rate
                 th New Rate
         tbody
             each event, j in model.events
                 tr
-                    td #{context.viewHelpers.formatDate(event.date)}
-                    td #{event.newRate.description}
-                    td(class="danger") #{event.oldRate.ratevalue} #{event.oldRate.ratesuffix}
-                    td(class="success") #{event.newRate.ratevalue} #{event.newRate.ratesuffix}
+                    td #{context.viewHelpers.formatDate(event.creates)}
+                    td #{event.name}
+                    td(class="danger") #{event.old_rate}
+                    td(class="success") #{event.new_rate}
 
-    h5 Latest Pull from ANZ Bank
+    h5 Latest Stored Pull from Source
     if(model.pulls.length == 0)
         div(class="panel panel-default")
                 div(class="panel-heading")
@@ -32,25 +32,23 @@ block content
                     table(class="table table-striped table-bordered table-hover")
                         thead
                             tr
-                                th Product
-                                th Rate Code
-                                th Rate Value
+                                th Identifier
+                                th Name
+                                th Rate
 
     else
         each pull, i in model.pulls
             div(class="panel panel-default")
                 div(class="panel-heading")
-                    h3(class="panel-title") #{context.viewHelpers.formatDate(pull.date)} [#{pull.numRatesOfInterest} rate(s)]
+                    h3(class="panel-title") #{context.viewHelpers.formatDate(pull.creates)} [#{pull.rates.length} rate(s)]
                 div(class="panel-body")
                     table(class="table table-striped table-bordered table-hover")
                         thead
                             tr
-                                th Product
-                                th Rate Code
-                                th Rate Value
+                                th Identifier
+                                th Rate
                         tbody
-                            each rate, j in pull.ratesOfInterest
+                            each rate, j in pull.rates
                                 tr
-                                    td #{rate.description}
-                                    td #{rate.code}
-                                    td #{rate.ratevalue} #{rate.ratesuffix}
+                                    td #{rate.Name}
+                                    td #{rate.Rate}

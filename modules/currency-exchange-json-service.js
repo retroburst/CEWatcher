@@ -31,7 +31,7 @@ var configure = function configure(_applicationConfig, _datastore) {
     emailTemplate = jade.compileFile(appConstants.EMAIL_TEMPLATE_PATH, { pretty : true });
     pullJob = scheduleJob();
     // TODO: remoce / for testing only
-    process();
+    //process();
     logger.info("Completed configuration successfully.");
 }
 
@@ -58,7 +58,7 @@ var handleInsertNewPullDocEvent = function handleInsertNewPullDocEvent(err, doc)
     if(err){
         logger.error("Failed to insert a new pull document.", err);
     } else {
-        logger.info("Inserted new pull doc (" + doc.rates.keys().length + " rates).");
+        logger.info("Inserted new pull doc.");
     }
 };
 
@@ -421,29 +421,37 @@ var buildSourceURL = function buildSourceURL(){
  * Finds the rates of interest in the service source 
  * object.
  ********************************************************/
-var findRatesOfInterest = function findRatesOfInterest(body){
+var findRatesOfInterest = function findRatesOfInterest(sourceRates){
 	var result = null;
 	var ratesToFind = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
 	var rateResults = [];
 	var found = false;
 	// check the source body
-	if(!body.query.result.rate){
-		logger.warn("There was no rate results in the object returned from the service source.");
-		return(result);
+	logger.debug("typeof sourceRates", typeof sourceRates);
+	logger.debug("sourceRates", sourceRates.query.results);
+	
+	//if(check.not.null(sourceRates.query.results.rate)){
+	//	logger.warn("There was no rate results in the object returned from the service source.");
+	//	return(result);
+	//}
+	
+	if(check.array(sourceRates.query.results.rate)){
+		rateResults = rateResults.concat(sourceRates.query.results.rate);
+	} else {
+		rateResults.push(sourceRates.query.results.rate);
 	}
 	
-	if(check.array(body.query.results.rate)){
-		rateResults.concat(body.query.results.rate);
-	} else {
-		rateResults.push(body.query.results.rate);
-	}
-		
+	logger.debug("rateResults", rateResults);
+	
 	if(check.array(ratesToFind) && ratesToFind.length > 0){
+		logger.info("starting loop...");
 		for(var i=0; i < ratesToFind.length; i++){	
 			found = false;
-			for(var j=0; j < rateResults; j++){
+			for(var j=0; j < rateResults.length; j++){
+				logger.info("Comparing",ratesToFind[i].id, rateResults[j].id);
 				if(ratesToFind[i].id == rateResults[j].id){
 					found = true;		
+					if(result === null) { result = {}; }
 					result[ratesToFind[i].id] = rateResults[j];
 					break;
 				}
@@ -468,14 +476,16 @@ var process = function process(callback){
         logger.info("Entering request handler.");
         if (!error && response.statusCode == 200) {
             logger.info("Response ok. Processing...");
-            console.log(body);
-            var ratesOfInterest = findRatesOfInterest(body);
+            logger.info("Response from source.", body, response.statusCode);
+            var responseRates = JSON.parse(body);
+            logger.debug("responseRates", responseRates);
+            var ratesOfInterest = findRatesOfInterest(responseRates);
             if(ratesOfInterest){
             	compareRates(ratesOfInterest);
             }
             logger.info("Process complete.");
         } else {
-            logger.error("Failed to request service source for information.", error);
+            logger.error("Failed to request service source for information.", error, response.statusCode);
         }
         if(callback) { callback(); }
     });

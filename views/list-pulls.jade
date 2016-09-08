@@ -2,24 +2,22 @@ extends layout
 
 block content
     h5.
-        List of Pulls from ANZ Bank
+        List of Stored Pulls from Source
 
     each pull, i in model.pulls
         div(class="panel panel-default")
             div(class="panel-heading")
-                h3(class="panel-title") #{context.viewHelpers.formatDate(pull.date)} [#{pull.numRatesOfInterest} rate(s)]
+                h3(class="panel-title") #{context.viewHelpers.formatDate(pull.created)} [#{pull.rates.length} rate(s)]
             div(class="panel-body")
                 table(class="table table-striped table-bordered table-hover")
                     thead
                         tr
-                            th Product
-                            th Rate Code
-                            th Rate Value
+                            th Identifier
+                            th Rate
                     tbody
-                        each rate, j in pull.ratesOfInterest
+                        each rate, j in pull.rates
                             tr
-                                td #{rate.description}
-                                td #{rate.code}
-                                td #{rate.ratevalue} #{rate.ratesuffix}
+                                td #{rate.Name}
+                                td #{rate.Rate}
 
     include ./includes/pagination.jade
