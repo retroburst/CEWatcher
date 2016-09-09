@@ -430,10 +430,10 @@ var findRatesOfInterest = function findRatesOfInterest(sourceRates){
 	logger.debug("typeof sourceRates", typeof sourceRates);
 	logger.debug("sourceRates", sourceRates.query.results);
 	
-	//if(check.not.null(sourceRates.query.results.rate)){
-	//	logger.warn("There was no rate results in the object returned from the service source.");
-	//	return(result);
-	//}
+	if(check.not.assigned(sourceRates.query.results.rate)){
+		logger.warn("There was no rate results in the object returned from the service source.");
+		return(result);
+	}
 	
 	if(check.array(sourceRates.query.results.rate)){
 		rateResults = rateResults.concat(sourceRates.query.results.rate);
