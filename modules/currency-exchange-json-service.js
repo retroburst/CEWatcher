@@ -430,7 +430,10 @@ var findRatesOfInterest = function findRatesOfInterest(sourceRates){
 	logger.debug("typeof sourceRates", typeof sourceRates);
 	logger.debug("sourceRates", sourceRates.query.results);
 	
-	if(check.not.assigned(sourceRates.query.results.rate)){
+	if(check.not.assigned(sourceRates)
+        || check.not.assigned(sourceRates.query)
+        || check.not.assigned(sourceRates.query.results)
+        || check.not.assigned(sourceRates.query.results.rate)){
 		logger.warn("There was no rate results in the object returned from the service source.");
 		return(result);
 	}
@@ -440,9 +443,7 @@ var findRatesOfInterest = function findRatesOfInterest(sourceRates){
 	} else {
 		rateResults.push(sourceRates.query.results.rate);
 	}
-	
 	logger.debug("rateResults", rateResults);
-	
 	if(check.array(ratesToFind) && ratesToFind.length > 0){
 		logger.info("starting loop...");
 		for(var i=0; i < ratesToFind.length; i++){	
