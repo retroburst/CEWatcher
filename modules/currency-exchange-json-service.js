@@ -31,7 +31,7 @@ var configure = function configure(_applicationConfig, _datastore) {
     emailTemplate = jade.compileFile(appConstants.EMAIL_TEMPLATE_PATH, { pretty : true });
     pullJob = scheduleJob();
     // TODO: remoce / for testing only
-    //process();
+    process();
     logger.info("Completed configuration successfully.");
 }
 

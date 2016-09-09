@@ -47,6 +47,15 @@
                         { "id" : "RI-AUDUSD-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.90 } },
                         { "id" : "RI-AUDUSD-NR-GE-80", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.80 } }
                     ]
+                },
+
+                {
+                    "id" : "USDJPY",
+                    "name" : "American Dollar to Japanese Yen",
+                    "notifyRules" : [
+                        { "id" : "RI-USDJPY-NR-GE-80", "rule" : { "type" : "lessThanEqualTo", "value" : 80.00 } },
+                        { "id" : "RI-USDJPY-NR-LE-60", "rule" : { "type" : "lessThanEqualTo", "value" : 60.00 } }
+                    ]
                 }
             ]
         },
