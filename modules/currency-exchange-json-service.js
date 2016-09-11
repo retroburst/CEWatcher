@@ -237,33 +237,32 @@ var compareRates = function compareRates(ratesOfInterest)
         } else {
             // check for changed rates
             var changedRates = [];
-            if(pulls.length >= 1)
-            {
-            	var lastPullRates = pulls[0].rates;
-            	var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
-          		logger.debug(util.format("Iterating over %d configured rates of interest."), configuredRatesOfInterest.length);
-          		logger.debug(util.format("Iterating over %d source rates of interest."), ratesOfInterest.length);
-          		for(var i=0; i < configuredRatesOfInterest.length; i++) {
-	          		for(var j=0; j < ratesOfInterest.length; j++) {
-              		// if this rateis in the last pull
-                  if(configuredRatesOfInterest[i].id === ratesOfInterest[j].id)
-                  {	
-                  	logger.debug(util.format("Matched configured rate to source rate with id '%s'.", configuredRatesOfInterest[i].id)); 
-                		var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[j].Rate);
-                    logger.debug("Evaluatd rules.", rulesResult);
-                    if(rulesResult.triggered)
-                    {
-											var processedResult = processRateChange(
-													configuredRatesOfInterest[i], 
-													ratesOfInterest[j], 
-													lastPullRates[configuredRatesOfInterest[i].id], 
-													rulesResult);
-											logger.debug("Processed rate change.", processedRateChange);
-											if(processedResult.shouldNotify) { changedRates.push(processedResult.processedRateChange); }
+            var lastPullRates = null;
+            if(pulls.length >= 1) { lastPullRates = pulls[0].rates; }
+            var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
+            logger.debug(util.format("Iterating over %d configured rates of interest.", configuredRatesOfInterest.length));
+            logger.debug(util.format("Iterating over %d source rates of interest.", underscore.keys(ratesOfInterest).length));
+            for(var i=0; i < configuredRatesOfInterest.length; i++) {
+                for(var key in ratesOfInterest) {
+                    logger.debug(util.format("Matching %s and %s.", configuredRatesOfInterest[i].id, ratesOfInterest[key].id));
+                    if(configuredRatesOfInterest[i].id === ratesOfInterest[key].id)
+                    {	
+                        logger.debug(util.format("Matched configured rate to source rate with id '%s'.", configuredRatesOfInterest[i].id)); 
+                        var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[key].Rate);
+                        logger.debug("Evaluatd rules.", rulesResult);
+                        if(rulesResult.triggered)
+                        {
+                            var processedResult = processRateChange(
+                                    configuredRatesOfInterest[i], 
+                                    ratesOfInterest[key], 
+                                    getRateFromLastPullSafe(lastPullRates, configuredRatesOfInterest[i].id), 
+                                    rulesResult);
+                            logger.debug("Processed rate change.", processedRateChange);
+                            if(processedResult.shouldNotify) { changedRates.push(processedResult.processedRateChange); }
+                        }
+                        break;
                     }
-                  }
-	              }
-	          	} 
+                }	 
             }
             // if we have some change in rates or if there is no pulls
             // in the datastore yet - save the pull
@@ -283,6 +282,19 @@ var compareRates = function compareRates(ratesOfInterest)
 };
 
 /********************************************************
+ * Get last pull rate for this id.
+ ********************************************************/
+var getRateFromLastPullSafe = function getRateFromLastPullSafe(lastPull, id) {
+    var result = null;
+    if(check.assigned(lastPull)){
+        if(check.assigned(lastPull[id])){
+            result = lastPull[id].Rate;
+        }
+    }
+    return(result);
+};
+
+/********************************************************
  * Process the rate change by checking the last notification
  * created date for this rate of interest.
  ********************************************************/
@@ -297,7 +309,7 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
 					var rateChange = new models.event();
 					rateChange.ri_id = configRate.ri_id;
 					rateChange.ri_name = configRate.ri_name;
-					rateChange.old_rate = lastPullRate ? lastPullRate.Rate : null;
+					rateChange.old_rate = lastPullRate;
 					rateChange.new_rate = sourceRate.Rate;
 					rateChange.created = new Date();
 					rateChange.description = buildRateChangeDescription(rateChange);
