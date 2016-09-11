@@ -3,6 +3,6 @@
     // TODO: move this to a custom openshift env var
     "applicationConfig" :
     {
-        "selfURL" : "https://cewatcher-retroburst.rhcloud.com"
+        
     }
 }

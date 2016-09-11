@@ -43,9 +43,9 @@
                     "id" : "AUDUSD",
                     "name" : "Australian Dollar to American Dollar",
                     "notifyRules" : [
-                        { "id" : "RI-AUDUSD-NR-GE-100", "rule" : { "type" : "greaterThanEqualTo", "value" : 1.00 } },
-                        { "id" : "RI-AUDUSD-NR-GE-90", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.90 } },
-                        { "id" : "RI-AUDUSD-NR-GE-80", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.80 } }
+                        { "id" : "RI-AUDUSD-NR-GE-1.00", "rule" : { "type" : "greaterThanEqualTo", "value" : 1.00 } },
+                        { "id" : "RI-AUDUSD-NR-GE-0.90", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.90 } },
+                        { "id" : "RI-AUDUSD-NR-GE-0.80", "rule" : { "type" : "greaterThanEqualTo", "value" : 0.80 } }
                     ]
                 },
 
@@ -60,7 +60,7 @@
             ]
         },
         
-        "tailLogBufferSize" : 100,
+        "tailLogBufferSize" : 1000,
         "paginationPageSize" : 20,
         "useExpressPrettyOutput" : true,
         "log4js" : {

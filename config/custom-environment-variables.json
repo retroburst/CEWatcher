@@ -2,6 +2,7 @@
 {
     "applicationConfig" :
     {
+        "selfURL" : "OPENSHIFT_CUSTOM_SELF_URL",
         "environment" : "OPENSHIFT_CUSTOM_ENVIRONMENT",
         "bindIPAddress" : "OPENSHIFT_NODEJS_IP",
         "bindPort" : "OPENSHIFT_NODEJS_PORT",
