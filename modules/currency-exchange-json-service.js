@@ -487,7 +487,7 @@ var process = function process(callback){
     logger.info("Process called - doing a pull from the currency exchange source.", builtSourceURL);
     request(builtSourceURL, function(error, response, body){
         logger.info("Entering request handler.");
-        if (!error && response.statusCode == 200) {
+        if (!error && check.assigned(response) && response.statusCode == 200) {
             logger.info("Response ok. Processing...");
             logger.info("Response from source.", body, response.statusCode);
             var responseRates = JSON.parse(body);
@@ -498,7 +498,8 @@ var process = function process(callback){
             }
             logger.info("Process complete.");
         } else {
-            logger.error("Failed to request service source for information.", error, response.statusCode);
+            logger.error("Failed to request service source for information.", error);
+            if(check.assigned(response)) { logger.error(util.format("Response code was '%d'.", response.statusCode)); }
         }
         if(callback) { callback(); }
     });

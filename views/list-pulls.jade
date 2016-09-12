@@ -7,7 +7,7 @@ block content
     each pull, i in model.pulls
         div(class="panel panel-default")
             div(class="panel-heading")
-                h3(class="panel-title") #{context.viewHelpers.formatDate(pull.created)} [#{pull.rates.length} rate(s)]
+                h3(class="panel-title") #{context.viewHelpers.formatDate(pull.created)} [#{context.underscore.keys(pull.rates).length} rate(s)]
             div(class="panel-body")
                 table(class="table table-striped table-bordered table-hover")
                     thead

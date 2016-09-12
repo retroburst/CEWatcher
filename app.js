@@ -3,6 +3,7 @@ var config = require('config');
 var express = require('express');
 var moment = require('moment');
 var util = require('util');
+var underscore = require('underscore');
 var pkg = require('./package.json');
 
 // modules
@@ -32,6 +33,7 @@ var initExpressContext = function initExpressContext(){
     expressContext.version = applicationConfig.version;
     expressContext.paginationPageSize = applicationConfig.paginationPageSize;
     expressContext.moment = moment;
+    expressContext.underscore = underscore;
     expressContext.datastore = datastore;
     expressContext.viewHelpers = viewHelpers;
     expressContext.currencyExchangeJsonService = currencyExchangeJsonService;
