@@ -30,8 +30,6 @@ var configure = function configure(_applicationConfig, _datastore) {
     logger = loggerWrapper(global.logger, 'currency-exchange-json-service');
     emailTemplate = jade.compileFile(appConstants.EMAIL_TEMPLATE_PATH, { pretty : true });
     pullJob = scheduleJob();
-    // TODO: remoce / for testing only
-    process();
     logger.info("Completed configuration successfully.");
 }
 
@@ -399,6 +397,7 @@ var evalutaeRules = function evaluateRule(rules, rate){
  ********************************************************/
 var evaluateRule = function evaluateRule(rule, rate){
 	if(check.nonEmptyString(rule.type)){
+        rate = parseFloat(rate);
 		switch(rule.type){
 			case "greaterThanEqualTo": return(rate >= rule.value);
 			case "greaterThan": return(rate > rule.value);
