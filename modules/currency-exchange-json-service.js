@@ -1,7 +1,6 @@
 // requires
 var jade = require('jade');
 var request = require('request');
-var jsonPath = require('jsonpath-plus');
 var util = require('util');
 var moment = require('moment');
 var email = require('emailjs');

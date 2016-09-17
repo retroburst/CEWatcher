@@ -16,7 +16,6 @@
     "express": "~4.13.1",
     "jade": "~1.11.0",
     "jquery": "~2.2.0",
-    "jsonpath-plus": "~0.14.0",
     "log4js": "~0.6.31",
     "log4js-function-designation-wrapper": "0.0.1",
     "log4js-memory-appender": "^1.0.5",
