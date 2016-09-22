@@ -262,15 +262,9 @@ var compareRates = function compareRates(ratesOfInterest)
                     }
                 }	 
             }
-            // if we have some change in rates or if there is no pulls
-            // in the datastore yet - save the pull
-            if(changedRates.length > 0 || pulls.length === 0){
-                logger.info("Storing this pull in the datastore.");
-                // stuff them into the datastore
-                insertNewPullDoc(ratesOfInterest);
-            } else {
-                logger.info("Not storing this pull in the datastore.");
-            }
+            // stuff them into the datastore
+            logger.info("Storing the pull in the datastore.");
+            insertNewPullDoc(ratesOfInterest);
             // if change in rates - notify via email
             if(changedRates.length > 0) {
                 sendEmailNotifications(changedRates);
