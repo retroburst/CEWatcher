@@ -8,7 +8,7 @@ var event = function event() {
     this.new_rate = null;
     this.description = null;
     this.created = null;
-}
+};
 
 /********************************************************
  * Pull model.
@@ -23,7 +23,7 @@ var pull = function pull(){
  ********************************************************/
 var notification = function notification() {
 	this.ri_id = null;
-  this.ri_name = null;
+    this.ri_name = null;
 	this.triggered_rules = [];
 	this.created = null;
 };
