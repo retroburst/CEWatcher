@@ -12,7 +12,7 @@ var buildListPullsModel = function buildListPullsModel(req, paginationURLPattern
         if(err === null){
             var totalPages = 1;
             if(count != 0) totalPages = Math.ceil(count / pageSize);
-            pullsCollection.find({}, { limit : pageSize, skip : skip, sort : { date : -1 } }, function (err, pulls) {
+            pullsCollection.find({}, { limit : pageSize, skip : skip, sort : { created : -1 } }, function (err, pulls) {
                 if(err === null){
                     var model = {
                         pulls : pulls,
@@ -49,7 +49,7 @@ var buildListEventsModel = function buildListEventsModel(req, paginationURLPatte
         if(err === null){
             var totalPages = 1;
             if(count != 0) totalPages = Math.ceil(count / pageSize);
-            eventsCollection.find({}, { sort : { date : -1 } }, function (err, events) {
+            eventsCollection.find({}, { sort : { created : -1 } }, function (err, events) {
                 if(err === null){
                     var model = {
                         events : events,
@@ -92,11 +92,11 @@ var buildDiagnosticsModel = function buildDiagnosticsModel(req, callback){
  ********************************************************/
 var buildHomeModel = function buildHomeModel(req, callback){
     var pullsCollection = req.app.locals.context.datastore.getPullsCollection();
-    pullsCollection.find({}, { limit : 1, sort : { date : -1 } }, function (err, pulls) {
+    pullsCollection.find({}, { limit : 1, sort : { created : -1 } }, function (err, pulls) {
         if(err === null)
         {
             var eventsCollection = req.app.locals.context.datastore.getEventsCollection();
-            eventsCollection.find({}, { limit : 5, sort : { date : -1 } }, function (err, events) {
+            eventsCollection.find({}, { limit : 5, sort : { created : -1 } }, function (err, events) {
                 if(err === null){
                     var model = {
                         pulls : pulls,
