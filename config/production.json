@@ -1,6 +1,5 @@
 // Production environment overrides
 {
-    // TODO: move this to a custom openshift env var
     "applicationConfig" :
     {
         

@@ -63,6 +63,11 @@ router.get('/diagnostics', function(req, res, next){
     });
 });
 
+router.get('/force', function(req, res,next){
+    req.app.locals.context.currencyExchangeJsonService.process();
+    res.redirect('/');
+});
+
 /********************************************************
  * Test email send route.
  ********************************************************/

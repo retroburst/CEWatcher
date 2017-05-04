@@ -18,8 +18,8 @@ block content
         tbody
             each event, j in model.events
                 tr
-                    td #{context.viewHelpers.formatDate(event.creates)}
-                    td #{event.name}
+                    td #{context.viewHelpers.formatDate(event.created)}
+                    td #{event.ri_name}
                     td(class="danger") #{event.old_rate}
                     td(class="success") #{event.new_rate}
 

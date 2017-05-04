@@ -8,6 +8,7 @@ var schedule = require('node-schedule');
 var loggerWrapper = require('log4js-function-designation-wrapper');
 var check = require('check-types');
 var underscore = require('underscore');
+var async = require('async');
 
 // modules
 var appConstants = require('./app-constants');
@@ -233,7 +234,7 @@ var compareRates = function compareRates(ratesOfInterest)
             logger.error("Failed to get latest pull from the datastore.", err);
         } else {
             // check for changed rates
-            var changedRates = [];
+            var processResultContextQueue = [];
             var lastPullRates = null;
             if(pulls.length >= 1) { lastPullRates = pulls[0].rates; }
             var configuredRatesOfInterest = applicationConfig.currencyExchangeJsonService.ratesOfInterest;
@@ -246,16 +247,16 @@ var compareRates = function compareRates(ratesOfInterest)
                     {	
                         logger.debug(util.format("Matched configured rate to source rate with id '%s'.", configuredRatesOfInterest[i].id)); 
                         var rulesResult = evalutaeRules(configuredRatesOfInterest[i].notifyRules, ratesOfInterest[key].Rate);
-                        logger.debug("Evaluatd rules.", rulesResult);
+                        logger.debug("Evaluated rules.", rulesResult);
                         if(rulesResult.triggered)
                         {
-                            var processedResult = processRateChange(
-                                    configuredRatesOfInterest[i], 
-                                    ratesOfInterest[key], 
-                                    getRateFromLastPullSafe(lastPullRates, configuredRatesOfInterest[i].id), 
-                                    rulesResult);
-                            logger.debug("Processed rate change.", processedRateChange);
-                            if(processedResult.shouldNotify) { changedRates.push(processedResult.processedRateChange); }
+                            var processQueueData = { 
+                                configuredRate :  configuredRatesOfInterest[i], 
+                                rateOfInterest : ratesOfInterest[key], 
+                                lastRate : getRateFromLastPullSafe(lastPullRates, configuredRatesOfInterest[i].id), 
+                                rulesResult : rulesResult 
+                            };
+                            processResultContextQueue.push(processQueueData);
                         }
                         break;
                     }
@@ -264,10 +265,42 @@ var compareRates = function compareRates(ratesOfInterest)
             // stuff them into the datastore
             logger.info("Storing the pull in the datastore.");
             insertNewPullDoc(ratesOfInterest);
-            // if change in rates - notify via email
-            if(changedRates.length > 0) {
-                sendEmailNotifications(changedRates);
+            // prcoess any results
+            processResults(processResultContextQueue);
+        }
+    });
+};
+
+/********************************************************
+ * Process the results of the rate compare operation.
+ ********************************************************/
+var processResults = function processResults(processResultContextQueue){
+    var changedRates = [];
+    var processFunctions = [];
+    for(var i=0; i < processResultContextQueue.length; i++){          
+        var context = processResultContextQueue[i];
+        var processRateChangeFn = function(callback) {
+            return processRateChange(
+                    context.configuredRate, 
+                    context.rateOfInterest, 
+                    context.lastRate, 
+                    context.rulesResult,
+                    callback);
+        };
+        processFunctions.push(processRateChangeFn);
+    }
+
+    async.series(processFunctions, function(err, results) {
+        for(var i=0; i < results.length; i++){
+            var processedResult = results[i];
+            logger.debug("Processed rate change.", processedResult);
+            if(processedResult.shouldNotify) { 
+                changedRates.push(processedResult.processedRateChange); 
             }
+        }
+        // if change in rates - notify via email
+        if(changedRates.length > 0) {
+            sendEmailNotifications(changedRates);
         }
     });
 };
@@ -289,17 +322,18 @@ var getRateFromLastPullSafe = function getRateFromLastPullSafe(lastPull, id) {
  * Process the rate change by checking the last notification
  * created date for this rate of interest.
  ********************************************************/
-var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult){
+var processRateChange = function processRateChange(configRate, sourceRate, lastPullRate, rulesResult, callback){
 	var result = { shouldNotify : false, processedRateChange : null };
-	datastore.getNotificationsCollection().find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, notifications) {
+	var notificationsCollection = datastore.getNotificationsCollection();
+    notificationsCollection.find({ ri_id : configRate.id }, { limit : 1, sort : { created: -1 } }, function (err, notifications) {
 		  if(err){
 		      logger.error("Failed to get latest notification from the datastore.", err);
 		  } else {  
 				if(shouldSendNotification(notifications, configRate, rulesResult)){
 					logger.debug("Notifications should be sent. Building representing objects.");
 					var rateChange = new models.event();
-					rateChange.ri_id = configRate.ri_id;
-					rateChange.ri_name = configRate.ri_name;
+					rateChange.ri_id = configRate.id;
+					rateChange.ri_name = configRate.name;
 					rateChange.old_rate = lastPullRate;
 					rateChange.new_rate = sourceRate.Rate;
 					rateChange.created = new Date();
@@ -310,14 +344,14 @@ var processRateChange = function processRateChange(configRate, sourceRate, lastP
 					result.shouldNotify = true;
 				
 					var rateChangeNotification = new models.notification();    
-					rateChangeNotification.ri_id = configRate.ri_id;
-					rateChangeNotification.ri_name = configRate.ri_name;
+					rateChangeNotification.ri_id = configRate.id;
+					rateChangeNotification.ri_name = configRate.name;
 					rateChangeNotification.triggered_rules = rulesResult.triggeredRules;
 					rateChangeNotification.created = new Date();
 					insertNewNotificationEvent(rateChangeNotification);
 				}  
 		}                   		
-		return(result);
+		return(callback(null, result));
 	});
 };
 
@@ -358,7 +392,7 @@ var olderThanThreshold = function olderThanThreshold(notificationDate){
 	var notificationDateMoment = moment(notificationDate);
 	var nowMoment = moment(new Date());
 	var threshold = applicationConfig.currencyExchangeJsonService.notificationThresholdHours;
-	var difference = nowMoment.diff(notificationMoment, 'hours');
+	var difference = nowMoment.diff(notificationDateMoment, 'hours');
 	logger.debug(util.format("Difference in hours was '%d' compared to threshold '%d'.", difference, threshold));
 	return(difference > threshold);
 };
@@ -367,15 +401,16 @@ var olderThanThreshold = function olderThanThreshold(notificationDate){
  * Evaluates the notification rules to determine if any
  * trigger.
  ********************************************************/
-var evalutaeRules = function evaluateRule(rules, rate){
+var evalutaeRules = function evaluateRules(notifyRules, rate){
 	var results = { triggeredRules: [], triggered: false };
-	if(check.array(rules) && check.number(rate)){		 
-			for(var i=0; i < rules.length; i++){
-				logger.debug(util.format("Evalutaing rule '%s'.", rule.id));
-				var ruleResult = evaluateRule(rule, rate);
+    if(check.array(notifyRules) && check.nonEmptyString(rate)){		 
+			for(var i=0; i < notifyRules.length; i++){
+                var notifyRule = notifyRules[i];
+				logger.debug(util.format("Evalutaing rule '%s'.", notifyRule.id));
+				var ruleResult = evaluateRule(notifyRule, rate);
 				if(ruleResult === true){
-					logger.debug(util.format("Rule '%s' was triggered.", rule.id));					
-					results.triggeredRules.push(rule.id);
+					logger.debug(util.format("Rule '%s' was triggered.", notifyRule.id));
+					results.triggeredRules.push(notifyRule.id);
 					results.triggered = true;
 				}
 			}
@@ -388,14 +423,14 @@ var evalutaeRules = function evaluateRule(rules, rate){
 /********************************************************
  * Evaluates a notification  rule.
  ********************************************************/
-var evaluateRule = function evaluateRule(rule, rate){
-	if(check.nonEmptyString(rule.type)){
+var evaluateRule = function evaluateRule(notifyRule, rate){
+	if(check.nonEmptyString(notifyRule.rule.type)){
         rate = parseFloat(rate);
-		switch(rule.type){
-			case "greaterThanEqualTo": return(rate >= rule.value);
-			case "greaterThan": return(rate > rule.value);
-			case "lessThanEqualTo": return(rate <= rule.value);
-			case "lessThan": return(rate < rule.value);
+		switch(notifyRule.rule.type){
+			case "greaterThanEqualTo": return(rate >= notifyRule.rule.value);
+			case "greaterThan": return(rate > notifyRule.rule.value);
+			case "lessThanEqualTo": return(rate <= notifyRule.rule.value);
+			case "lessThan": return(rate < notifyRule.rule.value);
 		}
 	}
 };
@@ -507,5 +542,6 @@ var getScheduledRunInfo = function getScheduledRunInfo(){
 module.exports = {
     configure : configure,
     getScheduledRunInfo : getScheduledRunInfo,
-    testEmailSend : testEmailSend
+    testEmailSend : testEmailSend,
+    process : process
 };

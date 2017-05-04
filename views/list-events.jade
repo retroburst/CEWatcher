@@ -12,7 +12,6 @@ block content
                 th Name
                 th Old Rate
                 th New Rate
-                th Triggered Rules
         tbody
             each event, j in model.events
                 tr
@@ -21,6 +20,5 @@ block content
                     td #{event.ri_name}
                     td(class="danger") #{event.old_rate}
                     td(class="success") #{event.new_rate}
-                    td #{event.triggered_rules}
 
     include ./includes/pagination.jade
