@@ -19,7 +19,7 @@ router.get('/', function(req, res, next) {
         if(err) {
             next(err);
         } else {
-            res.render('index', { title : 'Home', model : model });
+            res.render('index', { model : model });
         }
     });
 });
